@@ -49,9 +49,16 @@ export default {
         this._play() // 自动轮播
       }
     }, 20)
+      window.addEventListener('resize', () => { // 窗口变化的轮播图处理
+        if (!this.slider) {
+          return
+        }
+        this._setSliderWidth(true)
+        this.slider.refresh()
+      })
   },
   methods: {
-    _setSliderWidth() {
+    _setSliderWidth(isResize) {
       this.children = this.$refs.sliderGroup.children
       let width = 0
       let sliderWidth = this.$refs.slider.clientWidth
@@ -62,7 +69,7 @@ export default {
         width += sliderWidth
       }
 
-      if (this.loop) {
+      if (this.loop && !isResize) {
         width += 2 * sliderWidth
       }
       this.$refs.sliderGroup.style.width = width + 'px'
@@ -78,8 +85,7 @@ export default {
         snap: true,
         snapLoop: true,
         snapThreshold: 0.3,
-        snapSpeed: 400,
-        click: true
+        snapSpeed: 400
       })
       this.slider.on('beforeScrollStart', () => {
         if (this.autoPlay) {
