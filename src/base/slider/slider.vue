@@ -48,13 +48,13 @@ export default {
         this._play() // 自动轮播
       }
     }, 20)
-      window.addEventListener('resize', () => { // 窗口变化的轮播图处理
-        if (!this.slider) {
-          return
-        }
-        this._setSliderWidth(true)
-        this.slider.refresh()
-      })
+    window.addEventListener('resize', () => { // 窗口变化的轮播图处理
+      if (!this.slider) {
+        return
+      }
+      this._setSliderWidth(true)
+      this.slider.refresh()
+    })
   },
   methods: {
     _setSliderWidth(isResize) {
