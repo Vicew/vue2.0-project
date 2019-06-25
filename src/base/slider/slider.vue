@@ -44,7 +44,6 @@ export default {
       this._setSliderWidth() // 设置宽度
       this._initDots() // 初始化Dots
       this._initSlider() // 初始化better-scroll配制
-
       if (this.autoPlay) {
         this._play() // 自动轮播
       }
