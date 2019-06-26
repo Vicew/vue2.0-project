@@ -48,7 +48,7 @@ export default {
         this._play() // 自动轮播
       }
     }, 20)
-    window.addEventListener('resize', () => { // 窗口变化的轮播图处理
+    window.addEventListener('resize', () => { // 窗口变化的轮播图大小调整处理
       if (!this.slider) {
         return
       }
