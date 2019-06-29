@@ -81,10 +81,11 @@ export default {
         scrollX: true,
         scrollY: false,
         momentum: false,
-        snap: true,
-        snapLoop: true,
-        snapThreshold: 0.3,
-        snapSpeed: 400
+        snap: {
+          loop: this.loop,
+          threshold: 0.3,
+          speed: 400
+        }
       })
       this.slider.on('beforeScrollStart', () => {
         if (this.autoPlay) {
@@ -93,11 +94,10 @@ export default {
       })
       this.slider.on('scrollEnd', () => {
         let pageIndex = this.slider.getCurrentPage().pageX
-        if (this.loop) {
-          pageIndex -= 1
-        }
+        // if (this.loop) {
+        //   pageIndex -= 1
+        // }
         this.currentPageIndex = pageIndex // 获取当前图片下标
-
         if (this.autoPlay) {
           clearTimeout(this.timer) // 手拖动之后重新计时
           this._play()
@@ -105,12 +105,9 @@ export default {
       })
     },
     _play() {
-      let pageIndex = this.currentPageIndex + 1
-      if (this.loop) {
-        pageIndex += 1
-      }
+      clearTimeout(this.timer)
       this.timer = setTimeout(() => {
-        this.slider.goToPage(pageIndex, 0, 400)
+        this.slider.next()
       }, this.interval)
     }
   },
