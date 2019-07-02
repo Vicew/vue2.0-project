@@ -19,6 +19,10 @@ export default {
     data: {
       type: Array,
       default: null
+    },
+    listenScroll: {
+      type: Boolean,
+      default: false
     }
   },
   mounted() {
@@ -32,9 +36,14 @@ export default {
         return
       }
       this.scroll = new BScroll(this.$refs.wrapper, {
-        pro: this.probeType,
+        probeType: this.probeType,
         click: this.click
       })
+      if (this.listenScroll) {
+        this.scroll.on('scroll', (pos) => {
+          this.$emit('scroll', pos) // 派发一个scroll事件
+        })
+      }
     },
     enable() {
       this.scroll && this.scroll.enable()
@@ -44,6 +53,12 @@ export default {
     },
     refresh() {
       this.scroll && this.scroll.refresh()
+    },
+    scrollTo() {
+      this.scroll && this.scroll.scrollTo.apply(this.scroll, arguments)
+    },
+    scrollToElement() {
+      this.scroll && this.scroll.scrollToElement.apply(this.scroll, arguments)
     }
   },
   watch: {

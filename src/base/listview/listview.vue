@@ -1,7 +1,12 @@
 <template>
-  <scroll class="listview" :data="data">
+  <scroll class="listview"
+          :data="data"
+          ref="listview"
+          :listenScroll="listenScroll"
+          :probeType="probeType"
+          @scroll="scroll">
     <ul>
-      <li v-for="group in data" class="list-group" :key="group.title">
+      <li v-for="group in data" class="list-group" :key="group.title" ref="listGroup">
         <h2 class="list-group-title">{{group.title}}</h2>
         <ul>
           <li v-for="item in group.items" class="list-group-item" :key="item.name">
@@ -11,17 +16,134 @@
         </ul>
       </li>
     </ul>
+    <div class="list-shortcut" @touchstart="onShortcutTouchStart" @touchmove.stop.prevent="onShortcutTouchMove">
+      <ul>
+        <li v-for="(item,index) in shortcutList"
+            class="item"
+            :class="{'current':currentIndex===index}"
+            :key="item"
+            :data-index="index">
+          {{item}}
+        </li>
+      </ul>
+    </div>
+    <div class="list-fixed" v-show="fixedTitle" ref="fixed">
+      <h1 class="fixed-title">{{fixedTitle}}</h1>
+    </div>
   </scroll>
 </template>
 
 <script type="text/ecmascript-6">
 import Scroll from 'base/scroll/scroll'
+import {getData} from 'common/js/dom'
+
+const ANCHOR_HRIGHT = 18
+const TITLE_HEIGHT = 30
 
 export default{
+  created() {
+    this.touch = {} // 不需要数据绑定，不用放在data中，只是为了让两个函数数据互通
+    this.listenScroll = true
+    this.listHeight = []
+    this.probeType = 3
+  },
+  data() {
+    return {
+      scrollY: -1,
+      currentIndex: 0, // 默认第一个高亮
+      diff: -1
+    }
+  },
   props: {
     data: {
       type: Array,
       default: null
+    }
+  },
+  computed: {
+    shortcutList() {
+      return this.data.map((group) => {
+        return group.title.substr(0, 1)
+      })
+    },
+    fixedTitle() {
+      if (this.scrollY > 0) {
+        return ''
+      }
+      return this.data[this.currentIndex] ? this.data[this.currentIndex].title : ''
+    }
+  },
+  methods: {
+    onShortcutTouchStart(e) {
+      let anchorIndex = getData(e.target, 'index')
+      let firstTouch = e.touches[0]
+      this.touch.y1 = firstTouch.pageY // 记录手触碰的y值
+      this.touch.anchorIndex = anchorIndex
+      this._scrollTo(anchorIndex)
+    },
+    onShortcutTouchMove(e) {
+      let firstTouch = e.touches[0]
+      this.touch.y2 = firstTouch.pageY
+      let delta = (this.touch.y2 - this.touch.y1) / ANCHOR_HRIGHT | 0 // 向下取整
+      let anchorIndex = parseInt(this.touch.anchorIndex) + delta
+      this._scrollTo(anchorIndex)
+    },
+    scroll(pos) {
+      this.scrollY = pos.y
+    },
+    _scrollTo(index) {
+      // if (!index && index !== 0) { // 黑色区域让他点动无效
+      //   return
+      // }
+      // if (index < 0) {
+      //   index = 0
+      // } else if (index > this.listHeight.length - 2) {
+      //   index = this.listHeight.length - 2
+      // }
+      this.$refs.listview.scrollToElement(this.$refs.listGroup[index], 0)
+    },
+    _calculateHeight() {
+      this.listHeight = []
+      const list = this.$refs.listGroup
+      let height = 0
+      this.listHeight.push(height)
+      for (let i = 0; i < list.length; i++) {
+        let item = list[i]
+        height += item.clientHeight
+        this.listHeight.push(height)
+      }
+    }
+  },
+  watch: {
+    data() {
+      setTimeout(() => {
+        this._calculateHeight()
+      }, 20)
+    },
+    scrollY(newY) { // 分三种情况讨论，最顶部的newY大于0，中间正常判断，底部可能大于height2
+      const listHeight = this.listHeight
+      if (newY > 0) {
+        this.currentIndex = 0
+        return
+      }
+      for (let i = 0; i < listHeight.length - 1; i++) {
+        let height1 = listHeight[i]
+        let heigth2 = listHeight[i + 1]
+        if (-newY >= height1 && -newY < heigth2) {
+          this.currentIndex = i
+          this.diff = heigth2 + newY
+          return
+        }
+      }
+      this.currentIndex = listHeight.length - 2
+    },
+    diff(newVal) {
+      let fixedTop = (newVal > 0 && newVal < TITLE_HEIGHT) ? newVal - TITLE_HEIGHT : 0
+      if (this.fixedTop === fixedTop) { // 监听环境下减少不必要的dom操作
+        return
+      }
+      this.fixedTop = fixedTop
+      this.$refs.fixed.style.transform = `translate3d(0,${fixedTop}px,0)`
     }
   },
   components: {
@@ -39,6 +161,7 @@ export default{
     height: 100%
     overflow: hidden
     background: $color-background
+    touch-action: none
     .list-group
       padding-bottom: 30px
       .list-group-title
