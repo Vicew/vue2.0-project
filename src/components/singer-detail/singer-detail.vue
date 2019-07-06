@@ -6,7 +6,7 @@
 
 <script type="text/ecmascript-6">
 import {mapGetters} from 'vuex'
-import {getSingerDetail} from 'api/singer'
+import {getSingerDetail, getSongVkey} from 'api/singer'
 import {ERR_OK} from 'api/config'
 import {createSong} from 'common/js/song'
 
@@ -37,15 +37,36 @@ export default {
         }
       })
     },
+    // _normalizeSongs(list) {
+    //   let ret = []
+    //   list.forEach((item) => {
+    //     let {musicData} = item
+    //     if (musicData.songid && musicData.albumid) {
+    //       ret.push(createSong(musicData))
+    //     }
+    //   })
+    //   return ret
+    // },
     _normalizeSongs(list) {
-      let ret = []
+      let result = []
       list.forEach((item) => {
+        // console.log('item',item)
+        // 解构赋值-拿到item 下的 musicData 列表数据
         let {musicData} = item
-        if (musicData.songid && musicData.albumid) {
-          ret.push(createSong(musicData))
-        }
+        // ------------- 更新的加上vkey
+        getSongVkey(musicData.songmid).then((res) => {
+          const vkey = res.data.items[0].vkey
+          if (musicData.songid && musicData.albummid) {
+            result.push(createSong(musicData, vkey))
+          }
+        })
+        // -------------
+        // console.log('musicData',musicData)
+        // if(musicData.songid && musicData.albummid){
+        //   result.push(CreatSong(musicData))
+        // }
       })
-      return ret
+      return result
     }
   }
 }
