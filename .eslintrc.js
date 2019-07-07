@@ -29,7 +29,8 @@ module.exports = {
     'eol-last':0,
     'space-before-function-paren': ['error', 'never'],
     'semi': ["error", "never"],
-    'space-infix-ops': "error"
+    'space-infix-ops': "error",
+    'before': true 
     // 'indent':["off",2]
   }
 }
