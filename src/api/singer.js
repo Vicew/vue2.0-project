@@ -39,7 +39,7 @@ export function getSongVkey(songmid) {
   const url = 'https://c.y.qq.com/base/fcgi-bin/fcg_music_express_mobile3.fcg'
   const data = Object.assign({}, {
     callback: 'musicJsonCallback',
-    loginUin: 1045366459,
+    loginUin: 1473645972,
     format: 'jsonp',
     platform: 'yqq',
     needNewCode: 0,
