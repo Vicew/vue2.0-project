@@ -30,7 +30,8 @@ module.exports = {
     'space-before-function-paren': ['error', 'never'],
     'semi': ["error", "never"],
     'space-infix-ops': "error",
-    'before': true 
+    'before': true,
+    'space-infix-ops': "error"
     // 'indent':["off",2]
   }
 }

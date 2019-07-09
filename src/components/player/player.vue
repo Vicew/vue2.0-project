@@ -17,103 +17,91 @@
           <h1 class="title" v-html="currentSong.name"></h1>
           <h2 class="subtitle" v-html="currentSong.singer"></h2>
         </div>
-        <div class="middle"
-             @touchstart.prevent="middleTouchStart"
-             @touchmove.prevent="middleTouchMove"
-             @touchend="middleTouchEnd"
-        >
+        <div class="middle">
           <div class="middle-l" ref="middleL">
             <div class="cd-wrapper" ref="cdWrapper">
               <div class="cd" ref="imageWrapper">
                 <img ref="image" :class="cdCls" class="image" :src="currentSong.image">
               </div>
             </div>
-            <div class="playing-lyric-wrapper">
-              <div class="playing-lyric">{{playingLyric}}</div>
-            </div>
           </div>
-          <scroll class="middle-r" ref="lyricList" :data="currentLyric && currentLyric.lines">
-            <div class="lyric-wrapper">
-              <div v-if="currentLyric">
-                <p ref="lyricLine"
-                   class="text"
-                   :class="{'current': currentLineNum ===index}"
-                   v-for="(line,index) in currentLyric.lines"
-                   :key="index"
-                >{{line.txt}}</p>
-              </div>
-              <div class="pure-music" v-show="isPureMusic">
-                <p>{{pureMusicLyric}}</p>
-              </div>
-            </div>
-          </scroll>
         </div>
         <div class="bottom">
-          <div class="dot-wrapper">
-            <span class="dot" :class="{'active':currentShow==='cd'}"></span>
-            <span class="dot" :class="{'active':currentShow==='lyric'}"></span>
-          </div>
-          <div class="progress-wrapper">
-            <span class="time time-l">{{format(currentTime)}}</span>
-            <div class="progress-bar-wrapper">
-              <progress-bar ref="progressBar" :percent="percent" @percentChange="onProgressBarChange"
-                            @percentChanging="onProgressBarChanging"></progress-bar>
-            </div>
-            <span class="time time-r">{{format(currentSong.duration)}}</span>
-          </div>
           <div class="operators">
-            <div class="icon i-left" @click="changeMode">
-              <i :class="iconMode"></i>
+            <div class="icon i-left">
+              <i class="icon-sequence"></i>
             </div>
             <div class="icon i-left" :class="disableCls">
               <i @click="prev" class="icon-prev"></i>
             </div>
             <div class="icon i-center" :class="disableCls">
-              <i class="needsclick" @click="togglePlaying" :class="playIcon"></i>
+              <i @click="togglePlaying" :class="playIcon" ></i>
             </div>
             <div class="icon i-right" :class="disableCls">
               <i @click="next" class="icon-next"></i>
             </div>
             <div class="icon i-right">
-              <i @click="toggleFavorite(currentSong)" class="icon" :class="favoriteIcon"></i>
+              <i class="icon icon-not-favorite"></i>
             </div>
           </div>
         </div>
       </div>
     </transition>
     <transition name="mini">
-      <div class="mini-player" v-show="!fullScreen" @click="open">
-        <div class="icon">
-          <div class="imgWrapper" ref="miniWrapper">
-            <img ref="miniImage" :class="cdCls" width="40" height="40" :src="currentSong.image">
-          </div>
-        </div>
-        <div class="text">
-          <h2 class="name" v-html="currentSong.name"></h2>
-          <p class="desc" v-html="currentSong.singer"></p>
-        </div>
-        <div class="control">
-          <progress-circle :radius="radius" :percent="percent">
-            <i @click.stop="togglePlaying" class="icon-mini" :class="miniIcon"></i>
-          </progress-circle>
-        </div>
-        <div class="control" @click.stop="showPlaylist">
-          <i class="icon-playlist"></i>
+    <div class="mini-player" v-show="!fullScreen" @click="open">
+      <div class="icon">
+        <div class="imgWrapper" ref="miniWrapper">
+          <img :class="cdCls" ref="miniImage" width="40" height="40" :src="currentSong.image">
         </div>
       </div>
+      <div class="text">
+        <h2 class="name" v-html="currentSong.name"></h2>
+        <p class="desc" v-html="currentSong.singer"></p>
+      </div>
+      <div class="control">
+        <i @click.stop="togglePlaying" :class="miniIcon"></i>
+      </div>
+      <div class="control" >
+        <i class="icon-playlist"></i>
+      </div>
+    </div>
     </transition>
+    <audio ref="audio" :src="currentSong.url" @canplay="ready" @error="error"></audio>
   </div>
 </template>
 
 <script type="text/ecmascript-6">
 import { mapGetters, mapMutations } from 'vuex'
+import animations from 'create-keyframe-animation'
+import {prefixStyle} from 'common/js/dom'
+
+const transform = prefixStyle('transform')
 
 export default {
+  data() {
+    return {
+      songReady: false
+    }
+  },
   computed: {
+    cdCls() {
+      return this.playing ? 'play' : 'play pause'
+    },
+    playIcon() {
+      return this.playing ? 'icon-pause' : 'icon-play'
+    },
+    miniIcon() {
+      return this.playing ? 'icon-pause-mini' : 'icon-play-mini'
+    },
+    disableCls() {
+      return this.songReady ? '' : 'disable'
+    },
     ...mapGetters([
       'fullScreen',
       'playlist',
-      'currentSong'
+      'currentSong',
+      'playing',
+      'currentIndex'
     ])
   },
   methods: {
@@ -123,9 +111,119 @@ export default {
     open() {
       this.setFullScreen(true)
     },
+    enter(el, done) {
+      const { x, y, scale } = this._getPosAndScale()
+
+      let animation = {
+        0: {
+          transform: `translate3d(${x}px,${y}px,0) scale(${scale})`
+        },
+        60: {
+          transform: `translate3d(0,0,0) scale(1.1)`
+        },
+        100: {
+          transform: `translate3d(0,0,0) scale(1)`
+        }
+      }
+
+      animations.registerAnimation({
+        name: 'move',
+        animation,
+        presets: {
+          duration: 400,
+          easing: 'linear'
+        }
+      })
+
+      animations.runAnimation(this.$refs.cdWrapper, 'move', done)
+    },
+    afterEnter() {
+      animations.unregisterAnimation('move')
+      this.$refs.cdWrapper.style.animation = ''
+    },
+    leave(el, done) {
+      this.$refs.cdWrapper.style.transition = 'all 0.4s'
+      const { x, y, scale } = this._getPosAndScale()
+      this.$refs.cdWrapper.style[transform] = `translate3d(${x}px,${y}px,0) scale(${scale})`
+      this.$refs.cdWrapper.addEventListener('transitionend', done)
+    },
+    afterLeave() {
+      this.$refs.cdWrapper.style.transition = ''
+      this.$refs.cdWrapper.style[transform] = ''
+    },
+    togglePlaying() {
+      if (!this.songReady) {
+        return
+      }
+      this.setPlayingState(!this.playing)
+    },
+    next() {
+      if (!this.songReady) {
+        return
+      }
+      let index = this.currentIndex + 1
+      if (index === this.playlist.length) { // 顺序播放到最后一首的时候
+        index = 0
+      }
+      this.setCurrentIndex(index)
+      if (!this.playing) {
+        this.togglePlaying()
+      }
+      this.songReady = false
+    },
+    prev() {
+      if (!this.songReady) {
+        return
+      }
+      let index = this.currentIndex - 1
+      if (index === -1) { // 顺序播放第一首的时候
+        index = this.playlist.length - 1
+      }
+      this.setCurrentIndex(index)
+      if (!this.playing) {
+        this.togglePlaying()
+      }
+      this.songReady = false
+    },
+    ready() {
+      this.songReady = true
+    },
+    error() {
+      this.songReady = true
+    },
+    _getPosAndScale() {
+      const targetWidth = 40
+      const paddingLeft = 40
+      const paddingBottom = 30
+      const paddingTop = 80
+      const width = window.innerWidth * 0.8
+      const scale = targetWidth / width
+      const x = -(window.innerWidth / 2 - paddingLeft)
+      const y = window.innerHeight - paddingTop - width / 2 - paddingBottom
+      return {
+        x,
+        y,
+        scale
+      }
+    },
     ...mapMutations({
-      setFullScreen: 'SET_FULL_SCREEN'
+      setFullScreen: 'SET_FULL_SCREEN',
+      setPlayingState: 'SET_PLAYING_STATE',
+      setCurrentIndex: 'SET_CURRENT_INDEX'
     })
+  },
+  watch: {
+    currentSong() {
+      this.$nextTick(() => {
+        this.$refs.audio.play()
+      })
+    },
+    playing(newPlaying) {
+      const audio = this.$refs.audio
+      this.$nextTick(() => {
+        newPlaying ? audio.play() : audio.pause()
+      })
+    }
   }
 }
 </script>
@@ -213,8 +311,10 @@ export default {
                 box-sizing: border-box
                 border-radius: 50%
                 border: 10px solid rgba(255, 255, 255, 0.1)
-              .play
-                animation: rotate 20s linear infinite
+                &.play
+                  animation: rotate 30s linear infinite
+                &.pause
+                  animation-play-state: paused
           .playing-lyric-wrapper
             width: 80%
             margin: 30px auto 0 auto
