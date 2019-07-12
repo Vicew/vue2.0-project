@@ -8,7 +8,7 @@
 import {mapGetters} from 'vuex'
 import {getSingerDetail, getSongVkey} from 'api/singer'
 import {ERR_OK} from 'api/config'
-import {createSong} from 'common/js/song'
+import {createSong, isValidMusic} from 'common/js/song'
 import MusicList from 'components/music-list/music-list'
 
 export default {
@@ -63,7 +63,7 @@ export default {
         // ------------- 更新的加上vkey
         getSongVkey(musicData.songmid).then((res) => {
           const vkey = res.data.items[0].vkey
-          if (musicData.songid && musicData.albummid) {
+          if (isValidMusic(musicData)) {
             result.push(createSong(musicData, vkey))
           }
         })
